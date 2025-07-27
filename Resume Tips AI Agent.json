@@ -1,0 +1,206 @@
+{
+  "name": "Resume Tips AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Resume Tips AI Agent",
+        "formDescription": "Submit your resume and provide an open position link and email address to get resume tips to apply to that position. ",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Resume",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".pdf, .doc, .docx, .jpg",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Position Posted URL",
+              "placeholder": "URL",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "93a1b7f2-f3e6-42c5-8c49-576f7a67a100",
+      "name": "On form submission",
+      "webhookId": "fad0a3c2-49cf-4066-884e-b18297db5680"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json[\"Position Posted URL\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "bbac412b-b96e-49a3-88da-3319003bbb60",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are an expert resume reviewer and job-match analyst. Your job is to compare a candidate’s resume to a job posting and provide specific, prioritized feedback on how the resume can be improved to better match the role. Always use clear, professional language, and support suggestions with rationale. Be direct, yet constructive.\n\nPlease analyze the resume against the job posting and provide the following. \n\nYou MUST format your response as a numbered list with the below bolded words and colon before providing your answer.\n\nFor missing keywords list 3-5 important keywords or skills from the job description that are not present in the resume. For experience gaps note any responsibilities or qualifications the resume lacks based on the job description. For optimizing suggestions provide 3-5 specific, actionable ways the candidate can improve the resume to better align with the job. For ATS Score Estimate give a rough estimate of how well this resume would scare in an Applicant Tracking System for this job (1-100), with explanation. \n\nYou MUST format your responses as listed below. \n\n\n1. Missing Keywords:[3-5 words]\n2. Experience Gaps: [1-2 sentences]\n3. Optimization Suggestions:[3-5 actions] \n4. ATS Score Estimate: [0-100 scale]\n\nDO NOT return a response that is not in this format.\nDO NOT output raw unstructured text. \n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "8a534ee5-b5ae-4320-82f4-8db47f878ec4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        208
+      ],
+      "id": "c84df40f-0d80-4204-8632-6e066776e880",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "TKwFqsU7m6FIYYer",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json.Email }}",
+        "subject": "Resume Tips For Your Submitted Position",
+        "message": "=<p> <h2> Hi {{ $('On form submission').item.json.Name }}! </h2> </p> \n\n<p> Thanks for submitting your resume for review. Based on the job posting you provided, here are some tailored suggestions to help optimize your resume: </p>\n\n<p> <strong> Missing Keywords </strong>: {{ $json.output[\"Missing Keywords\"] }}</p>\n\n<p> <strong> Experience Gaps</strong>: {{ $json.output[\"Experience Gaps\"] }} </p>\n\n<p> <strong> Optimization Suggestions</strong>: {{ $json.output[\"Optimization Suggestions\"] }} </p>\n\n<p> <strong> ATS Score Estimate</strong>: {{ $json.output[\"ATS Score Estimate\"] }} </p>\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        16
+      ],
+      "id": "c63e6e4a-76a4-476b-a5c8-2fb769c930a7",
+      "name": "Send a message",
+      "webhookId": "22040c53-d836-4bb9-a3ba-16dfc023a922",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xEpN95lhKkTzvsFj",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Missing Keywords\": \"Agile\",\n  \"Experience Gaps\": \"Working with ITSM\",\n  \"Optimization Suggestions\": \"get CSA certification\",\n  \"ATS Score Estimate\": \"50 - this is due to formatting\"\n}  "
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        208
+      ],
+      "id": "1c097a8e-8e77-4b74-add8-a9ce10b98e47",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b4c2a252-f4de-45c2-b31b-72371da7540d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "915b8eb7bbcdc723efb68154f2c0632aea5b2b1173179cb48e9eed6ef97b1e08"
+  },
+  "id": "JhLIpRIRRHOMahtv",
+  "tags": []
+}
